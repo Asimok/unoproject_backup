@@ -26,8 +26,10 @@ bool leftStatue = false;
 bool rightStatue = false;
 
 void setup() {
-
-
+ switchlight("closeLeft");
+  delay(1000);
+  switchlight("closeRight");
+delay(100);
   Serial.begin(9600);
   //连接wifi
   WiFi.begin(ssid, password);
