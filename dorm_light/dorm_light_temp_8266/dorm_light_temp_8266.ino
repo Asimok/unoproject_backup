@@ -26,10 +26,11 @@ bool leftStatue = false;
 bool rightStatue = false;
 
 void setup() {
- switchlight("closeLeft");
   delay(1000);
+  switchlight("closeLeft");
+  delay(500);
   switchlight("closeRight");
-delay(100);
+  delay(1000);
   Serial.begin(9600);
   //连接wifi
   WiFi.begin(ssid, password);
@@ -141,8 +142,8 @@ void docode(char json[2000])
   tempcode = String(code);
   if (tempcode == "get_dht11")
     get_dht11();
-    else if (tempcode == "get_light_status")
-     send_light_data();
+  else if (tempcode == "get_light_status")
+    send_light_data();
   else
     switchlight(tempcode);
 
@@ -161,7 +162,7 @@ void switchlight(String tempcode)
     delay(100);
     left_servo.detach();
     leftStatue = true;
-send_light_data();
+    send_light_data();
   }
   else if (tempcode == "openRight")
   {
@@ -198,12 +199,12 @@ send_light_data();
     send_light_data();
   }
 
-  
+
 
 
 }
 
-void send_light_data(){
+void send_light_data() {
   delay(10);
 
   StaticJsonDocument<200> light_data;
@@ -213,7 +214,8 @@ void send_light_data(){
   serializeJson(light_data, msg);
   //      Serial.println(msg);
   client.publish(topic, msg );
-  delay(100);}
+  delay(100);
+}
 void loop() {
 
   //重连机制

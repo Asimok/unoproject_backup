@@ -4,9 +4,9 @@
 
 #define GPIO 0  //定义继电器输入引脚为D7
 
-char auth[] = "6c8e330dd4a2";
- char ssid[] = "女寝专用";
-char pswd[] = "208208nb";
+char auth[] = "";
+ char ssid[] = "";
+char pswd[] = "";
 
 // 新建组件对象
 BlinkerButton Button1("btn-abc");//注意：要和APP组件’数据键名’一致
