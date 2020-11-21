@@ -7,8 +7,8 @@
 
 #include <SPI.h>
 #include <MFRC522.h>
-#define RST_PIN         5           // 配置针脚
-#define SS_PIN          4
+#define RST_PIN 5           // 配置针脚
+#define SS_PIN 4
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // 创建新的RFID实例
 MFRC522::MIFARE_Key key;
 
@@ -17,17 +17,20 @@ long lastMsg = 0;
 char msg[500];
 int value = 0;
 
-const char* ssid = "HUAWEI_B316_mqtt";
-const char* password = "mqtt103mqtt103";
+
+const char* ssid = "Asus AC2400";
+const char* password = "ljp103ljp103";
 const char* mqtt_server = "119.45.181.212";
 const int mqttPort = 1883;
-const char* clientId = "entrance_230603001";
-const char* topic_y2m = "chargingpile_lock_y2m";
-const char* topic_m2y = "chargingpile_lock_m2y";
-const char* topic_online = "chargingpile_lock_status";
+const char* clientId = "E230602NEPU001";
+const char* topic_y2i = "E230602NEPU001_Y2I";
+const char* topic_I2y = "E230602NEPU001_I2Y";
+
 
 char* code = "close";
 String open_id = "";
+const String etype = "out"; //门禁类型 in/out
+const String emode = "long"; //门禁模式 long/share
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -62,18 +65,11 @@ void setup() {
   SPI.begin();        // SPI开始
   mfrc522.PCD_Init(); // Init MFRC522 card
 
-  char buff[50];
-  //客户端上线提醒
-  memset(buff, 0, sizeof(buff));
-  const char *buff2 = "_online";
-  strcpy(buff, clientId);
-  strcat(buff, buff2);
-  //发送连接成功消息
-  client.publish(topic_online, buff );
   //订阅主题
-  client.subscribe(topic_y2m);
+  client.subscribe(topic_y2i);
   delay(100);
 
+  //客户端上线提醒
   openBeep(3);
   Serial.println("system start");
 }
@@ -127,14 +123,20 @@ void docode(char json[2000])
   const char* code = doc["code"];
   const char* client_id = doc["client_id"];
   const char* open_id_char = doc["open_id"];
-  String tempcode, temp_client_id;
+  const char* temp_type_char = doc["type"];
+  const char* temp_mode_char = doc["mode"];
+
+  String tempcode, temp_client_id, temp_type, temp_mode;
   open_id = String(open_id_char);
   tempcode = String(code);
+  temp_type = String(temp_type_char);
+  temp_mode = String(temp_mode_char);
   temp_client_id = String(client_id);
-  if (temp_client_id == clientId)
+
+  //ID匹配并且类型匹配
+  if (temp_client_id == clientId && temp_type == etype && temp_mode == emode )
   {
-       Serial.println("自身客户端指令");
-      
+    Serial.println("自身客户端指令");
     switchlock(tempcode);
   }
   else
@@ -145,23 +147,25 @@ void switchlock(String tempcode)
 {
 
   delay(10);
-   Serial.println(tempcode);
+  Serial.println(tempcode);
   if (tempcode == "open")
   {
     //开锁
 
     char msg[1000];
-    StaticJsonDocument<2000> entrance;
-    StaticJsonDocument<200> uid_data;
+    StaticJsonDocument<2000> entrance;//外层
+    StaticJsonDocument<200> uid_data; //内层
 
     uid_data["client_id"] = clientId;
     uid_data["open_id"] = open_id;
     uid_data["status"] = "opened";
-    
+    uid_data["type"] = etype;
+    uid_data["mode"] = emode;
+
     entrance["entrance"] = uid_data;
     serializeJson(entrance, msg);
     Serial.println(msg);
-    client.publish(topic_m2y, msg );
+    client.publish(topic_I2y, msg );
     digitalWrite(lock, HIGH);
     openBeep(1);
 
@@ -176,10 +180,12 @@ void switchlock(String tempcode)
     uid_data["client_id"] = clientId;
     uid_data["open_id"] = open_id;
     uid_data["status"] = "closed";
+    uid_data["type"] = etype;
+
     entrance["entrance"] = uid_data;
     serializeJson(entrance, msg);
     Serial.println(msg);
-    client.publish(topic_m2y, msg );
+    client.publish(topic_I2y, msg );
     digitalWrite(lock, LOW);
     openBeep(2);
   }
@@ -231,7 +237,6 @@ void rc522() {
   // 显示卡片的详细信息
   //  Serial.print(F("卡片 UID:"));
   dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
-
 
   //  Serial.println();
   //  Serial.print(F("卡片类型: "));
@@ -297,9 +302,12 @@ void dump_byte_array(byte *buffer, byte bufferSize) {
   StaticJsonDocument<200> uid_data;
   uid_data["client_id"] = clientId;
   uid_data["uid"] = temphex;
+  uid_data["mode"] = emode;
+  uid_data["type"] = etype;
+
   card["card"] = uid_data;
   serializeJson(card, msg);
-  client.publish(topic_m2y, msg );
+  client.publish(topic_I2y, msg );
   openBeep(1);
   Serial.println(msg);
 }
