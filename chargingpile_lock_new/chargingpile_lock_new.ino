@@ -18,8 +18,11 @@ char msg[500];
 int value = 0;
 
 
-const char* ssid = "Asus AC2400";
-const char* password = "ljp103ljp103";
+//const char* ssid = "Asus AC2400";
+//const char* password = "ljp103ljp103";
+const char* ssid = "女寝专用";
+const char* password = "208208nb";
+
 const char* mqtt_server = "119.45.181.212";
 const int mqttPort = 1883;
 const char* clientId = "E230602NEPU001";
@@ -304,7 +307,6 @@ void dump_byte_array(byte *buffer, byte bufferSize) {
   uid_data["uid"] = temphex;
   uid_data["mode"] = emode;
   uid_data["type"] = etype;
-
   card["card"] = uid_data;
   serializeJson(card, msg);
   client.publish(topic_I2y, msg );
