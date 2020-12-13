@@ -1,27 +1,24 @@
-// 去掉了小爱同学
+//去掉了小爱同学
 #include <SPI.h>
-#include <MFRC522.h>
 #include <Servo.h>
 #include <SoftwareSerial.h>
-
-SoftwareSerial mySerial(D0, D3);
+//手动安装
+#include <MFRC522.h>
 
 #define RST_PIN         5           // 配置针脚
 #define SS_PIN          4
+#define TOUCH_SIG D8
+
+SoftwareSerial mySerial(D0, D3);
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // 创建新的RFID实例
 MFRC522::MIFARE_Key key;
-
-#define TOUCH_SIG D8
-unsigned long previousMillis = 0; //毫秒时间记录
-
 Servo servo;
+
+unsigned long previousMillis = 0; //毫秒时间记录
 int servoPin = 2;//D4
-int beep = D0;
 
 void setup() {
-  pinMode(beep, OUTPUT); //蜂鸣器
   pinMode(TOUCH_SIG, INPUT);
-  digitalWrite(beep, HIGH);
   Serial.begin(9600); // 设置串口波特率为9600
   delay(100);
   mySerial.begin(9600);
@@ -43,9 +40,7 @@ void setup() {
 void loop()
 {
   rc522();
-
   touchbtn();
-
 }
 
 void touchbtn() {
@@ -59,9 +54,7 @@ void touchbtn() {
     {
       openlock();
     }
-
     //    Serial.print(touch_stat);
-
   }
 }
 void rc522() {
@@ -77,9 +70,8 @@ void rc522() {
     return;
   }
   // 显示卡片的详细信息
-  //  Serial.print(F("卡片 UID:"));
+  //  Serial.print("卡片 UID:");
   dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
-  //return;
 }
 
 /**
@@ -94,7 +86,6 @@ void dump_byte_array(byte *buffer, byte bufferSize) {
   }
   Serial.println(temphex);
   delay(100);
-  //  openBeep(1);
   check(temphex);
 
 }
@@ -117,16 +108,6 @@ String tohex(int n) {
     result = '0' + result; //不足两位补零
   }
   return result;
-}
-void openBeep(int times)
-{
-  for (int i = 0; i < times; i++)
-  {
-    digitalWrite(beep, LOW);
-    delay(100);
-    digitalWrite(beep, HIGH);
-    delay(100);
-  }
 }
 
 //获取状态

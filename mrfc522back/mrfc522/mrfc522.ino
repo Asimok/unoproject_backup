@@ -5,13 +5,10 @@
 #define BLINKER_WIFI
 #define BLINKER_MIOT_LIGHT//支持小爱同学
 #include <Blinker.h>
-SoftwareSerial mySerial(D0, D3);
-
 #define RST_PIN         5           // 配置针脚
 #define SS_PIN          4
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // 创建新的RFID实例
 MFRC522::MIFARE_Key key;
-
 #define TOUCH_SIG D8
 unsigned long previousMillis = 0; //毫秒时间记录
 
@@ -53,11 +50,10 @@ void miotPowerState(const String & state)
 
 void setup() {
   pinMode(beep, OUTPUT); //蜂鸣器
-    pinMode(TOUCH_SIG, INPUT);
+  pinMode(TOUCH_SIG, INPUT);
   digitalWrite(beep, HIGH);
   Serial.begin(9600); // 设置串口波特率为9600
   delay(200);
-  mySerial.begin(9600);
   Blinker.deleteTimer();
   BLINKER_DEBUG.stream(Serial);
   // 初始化blinker
@@ -66,8 +62,6 @@ void setup() {
 
   //小爱同学务必在回调函数中反馈该控制状态
   BlinkerMIOT.attachPowerState(miotPowerState);//注册回调函数
-
-
   SPI.begin();        // SPI开始
   mfrc522.PCD_Init(); // Init MFRC522 card
   delay(100);
@@ -77,8 +71,7 @@ void setup() {
   servo.write(0);
   delay(200);
   servo.detach();
-  mySerial.print("c");
-  //  Serial.println("test-demo-start");
+  openBeep(3);
 }
 void loop()
 {
@@ -89,14 +82,12 @@ void loop()
   unsigned long currentMillis = millis();         //读取当前时间
   if (currentMillis - previousMillis >= 20) //如果和前次时间大于等于时间间隔
   {
-    Serial.print("\nrunning\nTouch Stat - ");
     touch_stat = get_touch();
     if (touch_stat == 1)
     {
       openlock();
     }
-
-    Serial.print(touch_stat);
+    //    Serial.print(touch_stat);
 
   }
 
@@ -108,40 +99,15 @@ void rc522() {
     //Serial.println("没有找到卡");
     return;
   }
-
   // 选择一张卡
   if ( ! mfrc522.PICC_ReadCardSerial()) {
     //    Serial.println("没有卡可选");
     return;
   }
-
   // 显示卡片的详细信息
   //  Serial.print(F("卡片 UID:"));
   dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
-  //  Serial.println();
-  //  Serial.print(F("卡片类型: "));
-  MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-  //  Serial.println(mfrc522.PICC_GetTypeName(piccType));
 
-  // 检查兼容性
-  if (    piccType != MFRC522::PICC_TYPE_MIFARE_MINI
-          &&  piccType != MFRC522::PICC_TYPE_MIFARE_1K
-          &&  piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
-    //    Serial.println(F("仅仅适合Mifare Classic卡的读写"));
-    return;
-  }
-
-  MFRC522::StatusCode status;
-  if (status != MFRC522::STATUS_OK) {
-    //    Serial.print(F("身份验证失败？或者是卡链接失败"));
-    //    Serial.println(mfrc522.GetStatusCodeName(status));
-    return;
-  }
-  //停止 PICC
-  mfrc522.PICC_HaltA();
-  //停止加密PCD
-  mfrc522.PCD_StopCrypto1();
-  return;
 }
 
 /**
@@ -150,13 +116,11 @@ void rc522() {
 void dump_byte_array(byte *buffer, byte bufferSize) {
   String temphex = "";
   for (byte i = 0; i < bufferSize; i++) {
-    //    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
-    //    Serial.print(buffer[i], HEX);
     temphex += tohex(buffer[i]);
   }
   //  Serial.println(temphex);
   delay(100);
-  //  openBeep(1);
+  openBeep(1);
   check(temphex);
 
 }
@@ -198,23 +162,19 @@ boolean get_touch() {
   return touch_stat;
 }
 void openlock() {
-  mySerial.print("a");
-  //  Serial.println("openlock");
+  openBeep(2);
   servo.attach(servoPin);
   servo.write(100);
   delay(3000);
-
-
   servo.write(0);
   delay(1000);
   servo.detach();
-  mySerial.print("b");
+  openBeep(3);
 }
 void check(String temphex)
 {
   //  Serial.println("check");
   if (temphex == "9A685C1A")
-
   {
     //    Serial.println(temphex);
     openlock();
@@ -231,7 +191,7 @@ void check(String temphex)
   }
   else
   {
-    mySerial.print("d");
+    openBeep(4);
   }
 
 }

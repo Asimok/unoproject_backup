@@ -1,11 +1,9 @@
-
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial(2, 3); //RX=2,TX=3 ESP8266
 int beep = 4;
 
 void setup() {
   pinMode(beep, OUTPUT); //蜂鸣器
-
   digitalWrite(beep, HIGH);
   Serial.begin(9600);
   Serial.print("Welcome to use!\n");
@@ -28,11 +26,8 @@ void openBeep(int times)
   }
 }
 void loop() {
-
-
   if (mySerial.available())
   {
-
     String comdata = "";
     int i = 0;
     while (mySerial.available() > 0)
@@ -51,7 +46,8 @@ void loop() {
     else if (comdata == "b" )
     {
       openBeep(2);
-    }  else if (comdata == "c" )
+    }
+    else if (comdata == "c" )
     {
       openBeep(3);
     }
