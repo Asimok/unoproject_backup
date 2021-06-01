@@ -4,7 +4,7 @@ int beep = 4;
 
 void setup() {
   pinMode(beep, OUTPUT); //蜂鸣器
-  digitalWrite(beep, HIGH);
+  digitalWrite(beep, LOW);
   Serial.begin(9600);
   Serial.print("Welcome to use!\n");
   while (!Serial) {

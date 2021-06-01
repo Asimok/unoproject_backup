@@ -1,10 +1,8 @@
+//没加小爱同学
 #include <SPI.h>
 #include <MFRC522.h>
 #include <Servo.h>
 #include <SoftwareSerial.h>
-#define BLINKER_WIFI
-#define BLINKER_MIOT_LIGHT//支持小爱同学
-#include <Blinker.h>
 #define RST_PIN         5           // 配置针脚
 #define SS_PIN          4
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // 创建新的RFID实例
@@ -16,52 +14,12 @@ Servo servo;
 int servoPin = 2;//D4
 int beep = D0;
 
-char auth[] = "bb506eb40f3f";
-char ssid[] = "女寝专用";
-char pswd[] = "208208nb";
-// 新建组件对象
-BlinkerButton Button1("btn-abc");//注意：要和APP组件’数据键名’一致
-
-// 按下BlinkerAPP按键即会执行该函数
-void button1_callback(const String & state) {
-  BLINKER_LOG("get button state: ", state);
-  // digitalWrite(GPIO, !digitalRead(GPIO));
-  openlock();
-  Blinker.vibrate();
-}
-//小爱电源类操作的回调函数:
-//当小爱同学向设备发起控制, 设备端需要有对应控制处理函数
-void miotPowerState(const String & state)
-{
-  BLINKER_LOG("need set power state: ", state);
-  if (state == BLINKER_CMD_ON) {
-    // digitalWrite(GPIO, LOW);
-    openlock();
-    BlinkerMIOT.powerState("on");
-    BlinkerMIOT.print();
-  }
-  else if (state == BLINKER_CMD_OFF) {
-    // digitalWrite(GPIO, HIGH);
-    BlinkerMIOT.powerState("off");
-    BlinkerMIOT.print();
-  }
-}
-
-
 void setup() {
   pinMode(beep, OUTPUT); //蜂鸣器
   pinMode(TOUCH_SIG, INPUT);
   digitalWrite(beep, HIGH);
   Serial.begin(9600); // 设置串口波特率为9600
-  delay(200);
-  Blinker.deleteTimer();
-  BLINKER_DEBUG.stream(Serial);
-  // 初始化blinker
-  Blinker.begin(auth, ssid, pswd);
-  Button1.attach(button1_callback);
 
-  //小爱同学务必在回调函数中反馈该控制状态
-  BlinkerMIOT.attachPowerState(miotPowerState);//注册回调函数
   SPI.begin();        // SPI开始
   mfrc522.PCD_Init(); // Init MFRC522 card
   delay(100);
@@ -72,11 +30,11 @@ void setup() {
   delay(200);
   servo.detach();
   openBeep(3);
+  Serial.println("开机");
 }
 void loop()
 {
   rc522();
-  Blinker.run();
 
   boolean touch_stat;
   unsigned long currentMillis = millis();         //读取当前时间
@@ -88,7 +46,6 @@ void loop()
       openlock();
     }
     //    Serial.print(touch_stat);
-
   }
 
 }
@@ -96,16 +53,16 @@ void loop()
 void rc522() {
   // 寻找新卡
   if ( ! mfrc522.PICC_IsNewCardPresent()) {
-    //Serial.println("没有找到卡");
+    Serial.println("没有找到卡");
     return;
   }
   // 选择一张卡
   if ( ! mfrc522.PICC_ReadCardSerial()) {
-    //    Serial.println("没有卡可选");
+        Serial.println("没有卡可选");
     return;
   }
   // 显示卡片的详细信息
-  //  Serial.print(F("卡片 UID:"));
+    Serial.print(F("卡片 UID:"));
   dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
 
 }
@@ -118,7 +75,7 @@ void dump_byte_array(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
     temphex += tohex(buffer[i]);
   }
-  //  Serial.println(temphex);
+//    Serial.println(temphex);
   delay(100);
   openBeep(1);
   check(temphex);
@@ -146,13 +103,13 @@ String tohex(int n) {
 }
 void openBeep(int times)
 {
-  for (int i = 0; i < times; i++)
-  {
-    digitalWrite(beep, LOW);
-    delay(100);
-    digitalWrite(beep, HIGH);
-    delay(100);
-  }
+//  for (int i = 0; i < times; i++)
+//  {
+//    digitalWrite(beep, LOW);
+//    delay(100);
+//    digitalWrite(beep, HIGH);
+//    delay(100);
+//  }
 }
 
 //获取状态
@@ -174,6 +131,7 @@ void openlock() {
 void check(String temphex)
 {
   //  Serial.println("check");
+  Serial.println(temphex);
   if (temphex == "9A685C1A")
   {
     //    Serial.println(temphex);

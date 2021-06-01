@@ -1,4 +1,4 @@
-//去掉了小爱同学
+//去掉了小爱同学（延迟太高）
 #include <SPI.h>
 #include <Servo.h>
 #include <SoftwareSerial.h>
@@ -69,6 +69,7 @@ void rc522() {
     //    Serial.println("没有卡可选");
     return;
   }
+  
   // 显示卡片的详细信息
   //  Serial.print("卡片 UID:");
   dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);

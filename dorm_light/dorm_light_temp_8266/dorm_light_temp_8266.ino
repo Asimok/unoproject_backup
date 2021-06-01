@@ -20,11 +20,11 @@ dht11 dht;
 Servo left_servo, right_servo;
 
 /**MQTT服务器参数配置*/
-const char* wifiSSID = "wifi名称";
-const char* password = "密码";
-const char* mqttServer = "IP";
+const char* wifiSSID = "女寝专用";
+const char* password = "208208nb";
+const char* mqttServer = "39.96.68.13";
 const int mqttPort = 1883;
-const char* clientId = "4B208";
+const char* clientId = "4B2081";
 const char* topic = "dorm";
 
 WiFiClient espClient;
