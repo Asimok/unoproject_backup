@@ -1,7 +1,7 @@
 /*
   引脚定义：
   DHT11 5v ：D7
-  触摸按键 3.3v ：D8 
+  触摸按键 3.3v ：D8
   OLED 5v ：D15--SCL D14--SDA
   软串口：RX=D8,TX=D9
 */
@@ -48,6 +48,7 @@ int MODE = 1; //1 普通 2 静音
 String APIKEY = "SdQ0BnNLNW5YY7kwX";        //API KEY
 String CITY = "huhehaote";
 String NIGHT_LIGHT_STATUS = "n"; //小夜灯默认开
+bool KEEP_MSG = false;//备忘录模式
 /*系统配置*/
 const char* clientId = "jm_wifi";
 const char* topic_y2m = "jm_y2m";
@@ -57,8 +58,7 @@ const char* topic_m2y = "jm_m2y";
 int wifi_connect_try_count = 0;
 int reset_count = 0;
 bool WIFI_Status = true;
-//备忘录模式
-bool KEY_CLEAN = true;
+
 //非可自定义参数
 bool isbeep = true;
 
@@ -92,9 +92,9 @@ String rec_msg2 = "";
 String rec_msg3 = "";
 bool isdisp_msg = false;
 int show_msg_time = 0;
-// 按钮可以清楚保持状态
+// 按钮可以清除保持状态
 bool stay_block = false;
-
+bool HAS_MSG = false;
 
 
 /*NTP获取时间*/
@@ -215,8 +215,8 @@ void docode(char json[2000])
     {
       if (msg_type == "msg") //显示消息
       {
-        //判断是否设置为按键清除
-        if (KEY_CLEAN)
+        //判断是否为常显模式
+        if (KEEP_MSG)
           stay_block = true;
         else
           stay_block = false;
@@ -229,6 +229,7 @@ void docode(char json[2000])
         rec_msg1 = temp_rec_msg1;
         rec_msg2 = temp_rec_msg2;
         rec_msg3 = temp_rec_msg3;
+        
         isdisp_msg = true;
         show_msg_time = 1;
       }
@@ -243,6 +244,13 @@ void docode(char json[2000])
         if (device == "MSG_BEEP_TIMES")
         {
           MSG_BEEP_TIMES = payload.toInt();
+          mySerial.println(beep1);
+          client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"setted\"}" );
+          Serial.println("{\"source\":\"device\",\"status\":\"setted\"}");
+        }
+         if (device == "KEEP_MSG")
+        {
+          KEEP_MSG = payload.toInt();
           mySerial.println(beep1);
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"setted\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"setted\"}");
@@ -328,13 +336,13 @@ void docode(char json[2000])
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"received\"}");
         }
-else if (directions == "stop")
+        else if (directions == "stop")
         {
           mySerial.println(stop_car);
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"received\"}");
         }
-else if (directions == "speed1")
+        else if (directions == "speed1")
         {
           mySerial.println(speed1);
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
@@ -352,7 +360,7 @@ else if (directions == "speed1")
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"received\"}");
         }
-        
+
       }
     }
   }
@@ -367,11 +375,11 @@ void get_dht11(int temp_sys_current_millis)
     int tol = dht.read(dht11Pin);    //将读取到的值赋给tol
     dht11_temp = (float)dht.temperature; //将温度值赋值给temp
     dht11_humi = (float)dht.humidity; //将湿度值赋给humi
-//    Serial.print("DHT11-----温度: ");
-//    Serial.print(dht11_temp);
-//    Serial.print("C 湿度: ");
-//    Serial.print(dht11_humi);
-//    Serial.println("%");
+    //    Serial.print("DHT11-----温度: ");
+    //    Serial.print(dht11_temp);
+    //    Serial.print("C 湿度: ");
+    //    Serial.print(dht11_humi);
+    //    Serial.println("%");
   }
 }
 
@@ -510,6 +518,7 @@ void SENSOR_Init()
 
 /*OLED相关函数*/
 void mainPage() {
+  HAS_MSG = false;
   u8g2.clearBuffer();
   u8g2.firstPage();
   do {
@@ -564,8 +573,6 @@ void draw_msg(String s1, String s2, String s3)
 
   } while ( u8g2.nextPage() );
   u8g2.sendBuffer();
-  delay(1000);
-
 }
 
 String deal_str(String temp_text1, int num )
@@ -747,32 +754,39 @@ void switchMODE()
   }
 
 }
-void refrash_screen()
+void refrash_screen_long()
 {
-
-  if (isdisp_msg)
-  {
-
-    if (show_msg_time <= MSG_BEEP_TIMES )
-    {
-      show_msg_time++;
-      //显示消息
-      if (isbeep)
-
-        mySerial.println(beep3);
-      draw_msg(rec_msg1, rec_msg2, rec_msg3);
-      delay(10);
-    }
-    else {
-      show_msg_time = 1;
-      isdisp_msg = false;
-      rec_msg1 = "";
-      rec_msg2 = "";
-      rec_msg3 = "";
-    }
+//  Serial.println("消息 long");
+        HAS_MSG = true;
+        //显示消息
+        if (isbeep)
+          mySerial.println(beep3);
+        draw_msg(rec_msg1, rec_msg2, rec_msg3);
   }
 
+
+void refrash_screen_times()
+{
+//  Serial.println("消息 times");
+   
+  // 来新消息了 显示 MSG_BEEP_TIMES 次
+      if (show_msg_time <= MSG_BEEP_TIMES )
+      {
+        show_msg_time++;
+        //显示消息
+        if (isbeep)
+          mySerial.println(beep3);
+        draw_msg(rec_msg1, rec_msg2, rec_msg3);
+        delay(1000);
+      }
+      else {
+        show_msg_time = 1;
+        isdisp_msg = false;      
+    }
+    HAS_MSG = false;
+    
 }
+
 void changeLoc()
 {
 
@@ -861,20 +875,24 @@ void loop(void)
   }
   client.loop();
 
-  sys_current_millis  = millis();
+    sys_current_millis  = millis();
   updateTime(sys_current_millis);
   updateWeather(sys_current_millis);  //心知天气  发送http  get请求
   get_dht11(sys_current_millis);
   delay(10);
-  if (stay_block)
+  if(isdisp_msg)
   {
-    refrash_screen();
-  }
+    if (stay_block)
+    refrash_screen_long();
+  else 
+    refrash_screen_times();
+    }
   else
     mainPage();
 
+
   //长按机制
-  unsigned long currentMillist_key = millis();         //读取当前时间
+  unsigned long currentMillist_key = millis();    //读取当前时间
   boolean touch_stat;
   touch_stat = get_touch();
   if (touch_stat == 1 && is_touch == false)
@@ -897,8 +915,23 @@ void loop(void)
     }
     else if (currentMillist_key - previousMillis_key >= 20) //如果和前次时间大于等于时间间隔
     {
-      //清除屏幕内容
-      stay_block = false;
+     
+      //如果有消息 清除屏幕内容
+      //无消息 切换上一条
+      if (HAS_MSG)
+      {      
+        Serial.print("这里1111");
+        stay_block = false;
+        isdisp_msg =false;
+        mainPage();
+      }
+      else if (rec_msg1 != "")
+      {       
+        Serial.print("这里2222");
+        stay_block = true;
+        isdisp_msg = true;
+      }
+
     }
   }
 }
