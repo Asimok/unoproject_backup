@@ -11,12 +11,12 @@ long lastMsg = 0;
 char msg[500];
 int value = 0;
 //Wi-Fi配置
-const char* ssid = "女寝专用";
-const char* password = "208208nb";
+const char* ssid = "abc";
+const char* password = "12345678";
 //MQTT服务器配置
 const char* mqtt_server = "39.96.68.13";
 const int mqttPort = 1883;
-const char* clientId = "xiangbo";
+const char* clientId = "xiangbo_yingjian";
 const char* topic = "dorm";
 
 char* code ;
@@ -72,14 +72,14 @@ void setup() {
   
   delay(100);
   //初始化开关状态为关
-  switchlight("closeLight0");
-  delay(100);
-  switchlight("closeLight1");
-  delay(100);
-  switchlight("closeLight2");
-  delay(100);
-  switchlight("closeLight3");
-  delay(100);
+//  switchlight("closeLight0");
+//  delay(100);
+//  switchlight("closeLight1");
+//  delay(100);
+//  switchlight("closeLight2");
+//  delay(100);
+//  switchlight("closeLight3");
+//  delay(100);
 }
 
 /**
@@ -129,15 +129,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
   StaticJsonDocument<200> doc;
   deserializeJson(doc, json);
   const char* code = doc["code"];
-  Serial.println();
+  Serial.println("指令");
   Serial.println(code);
   
   String tempcode;
   tempcode = String(code);
+
   //  get_light_status 表示获取当前开关状态
   if (tempcode == "get_light_status")
     send_light_data();
-  else
+    
+  else if(tempcode!="sensor")
     //执行开关灯指令
     switchlight(tempcode);
 }
@@ -175,25 +177,25 @@ void switchlight(String tempcode)
 //解析四路开关关灯指令
   if (tempcode == "closeLight0")
   {
-    digitalWrite(light0, HIGH);
+    digitalWrite(light0, LOW);
     light0Statue = false;
     send_light_data();
   }
    if (tempcode == "closeLight1")
   {
-    digitalWrite(light1, HIGH);
+    digitalWrite(light1, LOW);
     light1Statue = false;
     send_light_data();
   }
    if (tempcode == "closeLight2")
   {
-    digitalWrite(light2, HIGH);
+    digitalWrite(light2, LOW);
     light2Statue = false;
     send_light_data();
   }
    if (tempcode == "closeLight3")
   {
-    digitalWrite(light3, HIGH);
+    digitalWrite(light3, LOW);
     light3Statue = false;
     send_light_data();
   }

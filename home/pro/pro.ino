@@ -70,8 +70,6 @@ void loop() {
     {
       digitalWrite(GPIO, !digitalRead(GPIO));
     }
-
-
     Serial.print(touch_stat);
 
   }
