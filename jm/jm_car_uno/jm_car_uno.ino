@@ -2,7 +2,7 @@
   uno r3 引脚定义
 
   直流电机驱动板：5 6 10 11
-  蜂鸣器 5v：8
+  蜂鸣器 5v：12
   超声波传感器 5v：A0 A1
   LED 5v：7
   光线传感器 5v：A3
@@ -12,7 +12,7 @@
 
   wifi d1 引脚定义
   DHT11 5v ：D7
-  触摸按键 3.3v ：D8 
+  触摸按键 3.3v ：D8
   OLED 5v ：D15--SCL D14--SDA
   软串口：RX=D8,TX=D9
 
@@ -23,25 +23,30 @@ SoftwareSerial mySerial(3, 4); //RX=3,TX=4
 /*系统配置*/
 //小夜灯开关
 bool NIGHT_LIGHT_STATUS = true;
-//光线传感器阈值 超过该值判定为夜晚
-int LIGHT_SENSOR_VALUE = 890;
+//光线传感器阈值 超过该值判定为夜晚 890
+int LIGHT_SENSOR_VALUE = 660;
 //人体红外传感器阈值
 int DETECT_PEOPLE_VALUE = 150;
 // 超声波避触发距离
-float MAX_STOP = 8;
-
+float MAX_STOP = 15;
+//避障开关
+bool BARRIER_STATUS = true;
+bool BLINK_BLOK=false;
+//中断触发时机
+int INTERUPT_TIME = 1;
 //车速设置
-int speed1 = 170;
-int speed2 = 220;
-int speed3 = 250;
-int CAR_SPEED = speed2;
+int speed1 = 105;
+int speed2 = 130;
+int speed3 = 170;
+int CAR_SPEED = speed1;
+int innerSpeed = 105;
 //直流电机
 int right_back = 11;  //in1
 int right_front = 10; //in2
 int left_back = 6;  //in3
 int left_front = 5; //in4
 //蜂鸣器 低电平触发
-int beep = 8;
+int beep = 12;
 //超声波测距
 unsigned int EchoPin = A0;
 unsigned int TrigPin = A1;
@@ -73,10 +78,12 @@ bool detectPeople()
   val = analogRead(PIR_sensor);    //读取A2口的电压值并赋值到val
   if (val > DETECT_PEOPLE_VALUE)//判断是否有人
   {
+    //                Serial.println("有人");
     return true;
   }
   else
   {
+    //     Serial.println("无人");
     return false;
   }
 
@@ -87,8 +94,8 @@ bool check_night()
   int val = 0;            //存储获取到的PIR数值
   delay(10);
   val = analogRead(Light_sensor);    //读取A2口的电压值并赋值到val
-  //  Serial.print("亮度: ");
-  //  Serial.println(val);
+  //    Serial.print("亮度: ");
+  //    Serial.println(val);
   if (val > LIGHT_SENSOR_VALUE) //大于该值判定为晚上
   {
     return true;
@@ -130,26 +137,27 @@ void carRun(int goDirection, int carSpeed )
     analogWrite(goDirection, carSpeed);
   }
 }
+//摇摆
 void swag()
 {
   //左转
   carRun(right_front, 0);
   carRun(left_back, 0);
-  carRun(left_front, CAR_SPEED);
-  carRun(right_back, CAR_SPEED);
-  delay(500);
+  carRun(left_front, innerSpeed - 30);
+  carRun(right_back, innerSpeed - 30);
+  delay(200);
   //右转
   carRun(left_front, 0);
   carRun(right_back, 0);
-  carRun(right_front, CAR_SPEED);
-  carRun(left_back, CAR_SPEED);
-  delay(800);
+  carRun(right_front, innerSpeed - 30);
+  carRun(left_back, innerSpeed - 30);
+  delay(400);
   //左转
   carRun(right_front, 0);
   carRun(left_back, 0);
-  carRun(left_front, CAR_SPEED);
-  carRun(right_back, CAR_SPEED);
-  delay(300);
+  carRun(left_front, innerSpeed - 30);
+  carRun(right_back, innerSpeed - 30);
+  delay(230);
   carStop();
 }
 //刹车
@@ -175,12 +183,65 @@ void openBeep(int times)
 
 //中断函数
 void blink() {
-  Serial.println("进入中断");
-  //中断处理程序
+  if (INTERUPT_TIME > 1)
+  { Serial.println("进入中断");
+  BLINK_BLOK=true;
+    //后退
+    carRun(right_front, 0);
+    carRun(left_front, 0);
+    carRun(right_back, CAR_SPEED-15);
+    carRun(left_back, CAR_SPEED );
+    for (int i = 0; i < 10; i++)
+      delayMicroseconds(10000);
+    carStop();
+    //警报
+    for (int i = 0; i < 7; i++)
+    {
+      digitalWrite(beep, LOW);
+      for (int i = 0; i < 5; i++)
+        delayMicroseconds(10000);
+      digitalWrite(beep, HIGH);
+      for (int i = 0; i < 5; i++)
+        delayMicroseconds(10000);
+    }
+    //后退
+    carRun(right_front, 0);
+    carRun(left_front, 0);
+    carRun(right_back, speed2-15);
+    carRun(left_back, speed2);
+    for (int i = 0; i < 50; i++)
+      delayMicroseconds(10000);
+    carStop();
+        for (int i = 0; i < 5; i++)
+      delayMicroseconds(10000);
+    //转体180
+    carRun(right_front, 0 );
+    carRun(left_back, 0);
+    carRun(left_front, innerSpeed + 10);
+    carRun(right_back, innerSpeed);
+    for (int i = 0; i < 40; i++)
+      delayMicroseconds(10000);
+    carStop();
+    for (int i = 0; i < 10; i++)
+      delayMicroseconds(10000);
+    //跳出中断
+    digitalWrite(warning, HIGH);
+        BLINK_BLOK=false;
+    Serial.println("跳出中断");
 
-  //跳出中断
-  digitalWrite(warning, HIGH);
-  Serial.println("跳出中断");
+  }
+  else
+  {
+    digitalWrite(beep, LOW);
+    for (int i = 0; i < 5; i++)
+      delayMicroseconds(10000);
+    digitalWrite(beep, HIGH);
+    for (int i = 0; i < 5; i++)
+      delayMicroseconds(10000);
+    Serial.println("避免首次中断！");
+        BLINK_BLOK=false;
+  }
+
 }
 
 //执行指令
@@ -222,7 +283,7 @@ void doComand(String comdata)
     //前进
     carRun(right_back, 0);
     carRun(left_back, 0);
-    carRun(right_front, CAR_SPEED);
+    carRun(right_front, CAR_SPEED - 19);
     carRun(left_front, CAR_SPEED);
   }
   else  if (comdata.indexOf("s") != -1 )
@@ -230,29 +291,64 @@ void doComand(String comdata)
     //后退
     carRun(right_front, 0);
     carRun(left_front, 0);
-    carRun(right_back, CAR_SPEED);
+    carRun(right_back, CAR_SPEED-15 );
     carRun(left_back, CAR_SPEED);
   }
   else  if (comdata.indexOf("a") != -1 )
   {
     //左转
-    carRun(right_front, 0);
-    carRun(left_back, 0);
-    carRun(left_front, CAR_SPEED);
-    carRun(right_back, CAR_SPEED);
+    if (CAR_SPEED == speed1)
+    {
+      carRun(right_front, 0);
+      carRun(left_back, 0);
+      carRun(left_front, CAR_SPEED - 27);
+      carRun(right_back, CAR_SPEED - 27);
+    }
+    else if (CAR_SPEED == speed2)
+    {
+      carRun(right_front, 0);
+      carRun(left_back, 0);
+      carRun(left_front, CAR_SPEED - 36);
+      carRun(right_back, CAR_SPEED - 36);
+    }
+    else
+    {
+      carRun(right_front, 0);
+      carRun(left_back, 0);
+      carRun(left_front, CAR_SPEED - 55);
+      carRun(right_back, CAR_SPEED - 55);
+    }
   }
   else  if (comdata.indexOf("d") != -1 )
   {
+
     //右转
-    carRun(left_front, 0);
-    carRun(right_back, 0);
-    carRun(right_front, CAR_SPEED);
-    carRun(left_back, CAR_SPEED);
+    if (CAR_SPEED == speed1)
+    {
+      carRun(left_front, 0);
+      carRun(right_back, 0);
+      carRun(right_front, CAR_SPEED - 27);
+      carRun(left_back, CAR_SPEED - 27);
+    }
+    else if (CAR_SPEED == speed2)
+    {
+      carRun(left_front, 0);
+      carRun(right_back, 0);
+      carRun(right_front, CAR_SPEED - 36);
+      carRun(left_back, CAR_SPEED - 36);
+    }
+    else
+    {
+      carRun(left_front, 0);
+      carRun(right_back, 0);
+      carRun(right_front, CAR_SPEED - 55);
+      carRun(left_back, CAR_SPEED - 55);
+    }
 
   }
   else  if (comdata.indexOf("1") != -1 )
   {
-    openBeep(3);
+    openBeep(1);
   }
   else  if (comdata.indexOf("3") != -1 )
   {
@@ -303,6 +399,20 @@ void doComand(String comdata)
     Serial.println("速度更新----3");
     openBeep(1);
   }
+  else  if (comdata.indexOf("o") != -1)
+  {
+    //刹车
+    BARRIER_STATUS = true;
+    Serial.println("避障模式----开");
+    openBeep(1);
+  }
+  else  if (comdata.indexOf("p") != -1)
+  {
+    //刹车
+    BARRIER_STATUS = false;
+    Serial.println("避障模式----关");
+    openBeep(1);
+  }
 }
 
 // 小夜灯
@@ -339,6 +449,7 @@ void setup() {
     ;
   }
   Serial.println("系统启动中");
+
   //外部中断
   attachInterrupt(0, blink, LOW);//低电平触发中断0，调用blink函数
   pinMode(warning, OUTPUT);
@@ -359,12 +470,16 @@ void setup() {
   pinMode(Light_sensor, INPUT);
   //LED
   pinMode(LED, OUTPUT);         //设置端口为输出模式
+
   //  openBeep(3);
   swag();
+
+
   Serial.print("jm's Car!\n");
 }
 
 void loop() {
+  INTERUPT_TIME++;
   //软串口数据监测
   if (mySerial.available())
   {
@@ -387,12 +502,14 @@ void loop() {
   detect_open_LED();
 
   //触发中断
-  //  float dis = getDistance();
-  //  Serial.println(dis);
-  //  if ( dis < MAX_STOP)
-  //  {
-  //    //最短距离 8厘米 触发中断
-  //    digitalWrite(warning, LOW);
-  //  }
-  delay(10);
+  if (BARRIER_STATUS&!BLINK_BLOK)
+  {
+    float dis = getDistance();
+    //    Serial.println(dis);
+    if ( dis < MAX_STOP)
+    {
+      //最短距离 8厘米 触发中断
+      digitalWrite(warning, LOW);
+    }
+  }
 }

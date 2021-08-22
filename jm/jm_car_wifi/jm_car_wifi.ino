@@ -1,7 +1,7 @@
 /*
   引脚定义：
   DHT11 5v ：D7
-  触摸按键 3.3v ：D8
+  触摸按键 3.3v ：D6
   OLED 5v ：D15--SCL D14--SDA
   软串口：RX=D8,TX=D9
 */
@@ -49,6 +49,8 @@ String APIKEY = "SdQ0BnNLNW5YY7kwX";        //API KEY
 String CITY = "huhehaote";
 String NIGHT_LIGHT_STATUS = "n"; //小夜灯默认开
 bool KEEP_MSG = false;//备忘录模式
+String BARRIER_STATUS ="o";//避障开关 默认开
+String CAR_SPEED=String(speed1);
 /*系统配置*/
 const char* clientId = "jm_wifi";
 const char* topic_y2m = "jm_y2m";
@@ -187,8 +189,8 @@ void reconnect_MQTT() {
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   //收到消息
   Serial.println("Message: ");
-  char a[1200] = "";
-  if (length <= 1200) {
+  char a[2000] = "";
+  if (length <= 2000) {
     for (int i = 0; i < length; i++) {
       Serial.print((char)payload[i]);
       a[i] = (char)payload[i];
@@ -220,6 +222,13 @@ void docode(char json[2000])
           stay_block = true;
         else
           stay_block = false;
+        if (isbeep)
+        {
+          for(int i=0;i<MSG_BEEP_TIMES;i++)
+          {
+            mySerial.println(beep3);
+            delay(1000);}
+        }
 
         client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"success\"}" );
         Serial.println("{\"source\":\"device\",\"status\":\"success\"}");
@@ -262,6 +271,14 @@ void docode(char json[2000])
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"setted\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"setted\"}");
         }
+         if (device == "barrier_status")
+        {
+          BARRIER_STATUS = String(payload);
+          mySerial.println(BARRIER_STATUS);
+          client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"setted\"}" );
+          Serial.println("{\"source\":\"device\",\"status\":\"setted\"}");
+        }
+        
         if (device == "MODE")
         {
           //1 普通 2 静音
@@ -303,12 +320,18 @@ void docode(char json[2000])
       }
       if (msg_type == "update")
       {
-        String data = "{\"temp\":" + String(dht11_temp) + ",\"humi\":" + String(dht11_humi) + ",\"night_light_status\":\"" + NIGHT_LIGHT_STATUS +  "\"}";
-        char data_char[80];
+//        {"temp":27,"barrier_status":o,"humi":46,"MODE":"1,"KEEP_MSG":"0,"night_light_status":"n"}
+        
+       
+        String data = "{\"temp\":" + String(dht11_temp) + ",\"barrier_status\":\"" + BARRIER_STATUS+ 
+        "\",\"humi\":" + String(dht11_humi) +",\"car_speed\":\"" +CAR_SPEED+"\",\"MODE\":" + String(MODE)+
+        ",\"KEEP_MSG\":" + KEEP_MSG+ ",\"night_light_status\":\"" + NIGHT_LIGHT_STATUS +  "\"}";
+        char data_char[500];
         strcpy(data_char, data.c_str());
         client.publish(topic_m2y,  data_char );
         Serial.println(data);
       }
+ 
       if (msg_type == "car")
       {
         String directions = root["directions"];
@@ -347,18 +370,21 @@ void docode(char json[2000])
           mySerial.println(speed1);
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"received\"}");
+          CAR_SPEED=String(speed1);
         }
         else if (directions == "speed2")
         {
           mySerial.println(speed2);
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"received\"}");
+          CAR_SPEED=String(speed2);
         }
         else if (directions == "speed3")
         {
           mySerial.println(speed3);
           client.publish(topic_m2y, "{\"source\":\"device\",\"status\":\"received\"}" );
           Serial.println("{\"source\":\"device\",\"status\":\"received\"}");
+          CAR_SPEED=String(speed3);
         }
 
       }
@@ -519,6 +545,8 @@ void SENSOR_Init()
 /*OLED相关函数*/
 void mainPage() {
   HAS_MSG = false;
+  stay_block = false;
+  isdisp_msg =false;
   u8g2.clearBuffer();
   u8g2.firstPage();
   do {
@@ -554,7 +582,6 @@ void mainPage() {
     u8g2.print(String(weatherData.temp) + "°C");
   } while ( u8g2.nextPage() );
   u8g2.sendBuffer();
-
 }
 
 void draw_msg(String s1, String s2, String s3)
@@ -759,8 +786,8 @@ void refrash_screen_long()
 //  Serial.println("消息 long");
         HAS_MSG = true;
         //显示消息
-        if (isbeep)
-          mySerial.println(beep3);
+//        if (isbeep)
+//          mySerial.println(beep3);
         draw_msg(rec_msg1, rec_msg2, rec_msg3);
   }
 
@@ -774,9 +801,11 @@ void refrash_screen_times()
       {
         show_msg_time++;
         //显示消息
-        if (isbeep)
-          mySerial.println(beep3);
+//        if (isbeep)
+//          mySerial.println(beep3);
         draw_msg(rec_msg1, rec_msg2, rec_msg3);
+        delay(2000);
+        mainPage();
         delay(1000);
       }
       else {
@@ -830,6 +859,14 @@ void setup(void)
     oled_log("by 没有胡子的猫", 5, 45);
   } while ( u8g2.nextPage() );
   u8g2.sendBuffer();
+delay(1500);
+    u8g2.clearBuffer();
+  u8g2.firstPage();
+  do {
+    oled_log("           To 姜萌", 5, 55);
+  } while ( u8g2.nextPage() );
+  u8g2.sendBuffer();
+  
   delay(1500);
   u8g2.clearBuffer();
   u8g2.firstPage();
@@ -875,14 +912,14 @@ void loop(void)
   }
   client.loop();
 
-    sys_current_millis  = millis();
+   sys_current_millis  = millis();
   updateTime(sys_current_millis);
   updateWeather(sys_current_millis);  //心知天气  发送http  get请求
   get_dht11(sys_current_millis);
   delay(10);
   if(isdisp_msg)
   {
-    if (stay_block)
+  if (stay_block)
     refrash_screen_long();
   else 
     refrash_screen_times();
@@ -920,14 +957,14 @@ void loop(void)
       //无消息 切换上一条
       if (HAS_MSG)
       {      
-        Serial.print("这里1111");
+//      Serial.print("这里1111");
         stay_block = false;
         isdisp_msg =false;
-        mainPage();
+//        mainPage();
       }
       else if (rec_msg1 != "")
       {       
-        Serial.print("这里2222");
+//        Serial.print("这里2222");
         stay_block = true;
         isdisp_msg = true;
       }
