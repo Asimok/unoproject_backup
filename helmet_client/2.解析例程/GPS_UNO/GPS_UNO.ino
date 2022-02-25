@@ -22,7 +22,8 @@ struct
 const unsigned int gpsRxBufferLength = 900;
 char gpsRxBuffer[gpsRxBufferLength];
 unsigned int ii = 0;
-SoftwareSerial mySerial2(12, 13); //RX=12,TX=13
+SoftwareSerial mySerial2(D5, D6); //RX=D5,TX=D6
+//SoftwareSerial mySerial2(12, 13); //RX=12,TX=13
 
 void setup()	//初始化内容
 {

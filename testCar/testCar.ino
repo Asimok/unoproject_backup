@@ -1,69 +1,30 @@
-int turnLeft = A0;
-int turnRight = 13;
-int front=5;
-int back=6;
+int left_back = 11;  //in4
+int left_front = 10; //in3
+int right_back = 6;  //in2
+int right_front = 5; //in1
 
 void setup() {
 
- //直流电机
-   pinMode(turnLeft, OUTPUT);
-  pinMode(turnRight, OUTPUT);
-  pinMode(front, OUTPUT);
-  pinMode(back, OUTPUT);
-//  digitalWrite(turnLeft, HIGH);
-//  digitalWrite(turnRight, LOW);
+  //直流电机
+  pinMode(left_front, OUTPUT);
+  pinMode(left_back, OUTPUT);
+  pinMode(right_front, OUTPUT);
+  pinMode(right_back, OUTPUT);
+
 }
 
 void loop() {
-//  //forward 向前转
-//  digitalWrite(input1, HIGH); //给高电平
-//  digitalWrite(input2, LOW); //给低电平
-//  digitalWrite(input3, HIGH); //给高电平
-//  digitalWrite(input4, LOW); //给低电平
-//  delay(1000);   //延时1秒
-//
-//  //stop 停止
-//  digitalWrite(input1, LOW);
-//  digitalWrite(input2, LOW);
-//  digitalWrite(input3, LOW);
-//  digitalWrite(input4, LOW);
-//  delay(500);  //延时0.5秒
-//
-//
-//  //back 向后转
-//  digitalWrite(input1, LOW);
-//  digitalWrite(input2, HIGH);
-//  digitalWrite(input3, LOW);
-//  digitalWrite(input4, HIGH);
-//  delay(1000);
-//analogWrite(front, 200);
- digitalWrite(turnLeft, HIGH);
- delay(1000);
+carRun(right_front, 200);
+// delay(1000);
  
 }
 
+//控制小车运动
 void carRun(int goDirection, int carSpeed )
 {
-  if (goDirection == 5 || goDirection == 6)
+  // 判断引脚
+  if (goDirection == 5 || goDirection == 6 || goDirection == 10 || goDirection == 11)
   {
     analogWrite(goDirection, carSpeed);
-  }
-
-  if (goDirection == 12 || goDirection == 13)
-  {
-    if (goDirection == 12)
-    {
-      digitalWrite(goDirection, LOW);
-      digitalWrite(goDirection + 1, HIGH);
-      delay(500);
-      digitalWrite(goDirection, HIGH);
-    }
-    else if (goDirection == 13)
-    {
-      digitalWrite(goDirection, LOW);
-      digitalWrite(goDirection - 1, HIGH);
-      delay(500);
-      digitalWrite(goDirection, HIGH);
-    }
   }
 }

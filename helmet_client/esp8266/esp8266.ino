@@ -4,6 +4,10 @@
 #include "ArduinoJson-v6.15.2.h"
 
 SoftwareSerial mySerial(D7, D8); // RX, TX
+
+
+const long gps_interval = 30000;       //GPS采集时间间隔
+
 long lastMsg = 0;
 char msg[500];
 int value = 0;

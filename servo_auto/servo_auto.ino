@@ -15,7 +15,7 @@ void setup() {
   while (!Serial) {
     ;
   }
-  mySerial.begin(9600);
+  mySerial.begin(115200);
   delay(1000);
   Serial.println("系统启动成功");
 
